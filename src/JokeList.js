@@ -1,6 +1,8 @@
 import React, {Component} from 'react';
 import axios from 'axios';
 import './JokeList.css'
+import uuid from 'uuid/v4'
+import Joke from "./Joke";
 
 class JokeList extends Component {
     static defaultProps = {
@@ -12,6 +14,7 @@ class JokeList extends Component {
         this.state = {jokes: []};
     }
 
+
     async componentDidMount() {
         let jokes = [];
         while (jokes.length < this.props.numJokesToGet) {
@@ -21,11 +24,20 @@ class JokeList extends Component {
                 }
             });
 
-            jokes.push(res.data.joke);
+            jokes.push({id: uuid(), text: res.data.joke, votes: 0});
 
         }
         //you bloody idiot don't forget setstate otherwise render will be empty.
         this.setState({jokes: jokes})
+    }
+
+    handleVote(id, delta) {
+        this.setState(
+            st => ({
+                jokes: st.jokes.map(j =>
+                    j.id === id ? {...j, votes: j.votes + delta} : j)
+            })
+        )
     }
 
     render() {
@@ -36,13 +48,21 @@ class JokeList extends Component {
                     <h1 className='JokeList-title'>
                         <span>Dad</span> jokes
                     </h1>
-                    <img src="https://assets.dryicons.com/uploads/icon/svg/8927/0eb14c71-38f2-433a-bfc8-23d9c99b3647.svg" alt=""/>
+                    <img
+                        src="https://assets.dryicons.com/uploads/icon/svg/8927/0eb14c71-38f2-433a-bfc8-23d9c99b3647.svg"
+                        alt=""/>
                     <button className='JokeList-getmore'>get more</button>
                 </div>
-                
+
                 <div className="JokeList-jokes">
-                    {this.state.jokes.map(joke => (
-                        <div>{joke}</div>
+                    {this.state.jokes.map(j => (
+                        <Joke
+                            votes={j.votes}
+                            text={j.text}
+                            key={j.id}
+                            upvote={() => this.handleVote(j.id, 1)}
+                            downvote={() => this.handleVote(j.id, -1)}
+                        />
                     ))}
                 </div>
             </div>
