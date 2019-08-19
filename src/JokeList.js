@@ -11,11 +11,19 @@ class JokeList extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {jokes: JSON.parse(window.localStorage.getItem('jokes') || '[]')
+        this.state = {
+            jokes: JSON.parse(window.localStorage.getItem('jokes') || '[]'),
+            loading: false
         };
+        this.handleClick = this.handleClick.bind(this)
     }
 
-    async getJokes(){
+    handleClick() {
+        this.setState({loading: true},  this.getJokes);
+
+    }
+
+    async getJokes() {
         let jokes = [];
         while (jokes.length < this.props.numJokesToGet) {
             let res = await axios.get('https://icanhazdadjoke.com/', {
@@ -28,17 +36,19 @@ class JokeList extends Component {
 
         }
         //you bloody idiot don't forget setstate otherwise render will be empty.
-        this.setState({jokes: jokes});
-        window.localStorage.setItem(
-            "jokes", JSON.stringify(jokes)
+        this.setState(st => ({
+                loading: false,
+                jokes: [...st.jokes, ...jokes]
+            }),
+            () => window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
+        );
+        window.localStorage.setItem("jokes", JSON.stringify(jokes)
         )
     }
 
 
-     componentDidMount() {
-        if (this.state.jokes.length === 0 ) this.getJokes()
-
-
+    componentDidMount() {
+        if (this.state.jokes.length === 0) this.getJokes()
     }
 
     handleVote(id, delta) {
@@ -46,12 +56,21 @@ class JokeList extends Component {
             st => ({
                 jokes: st.jokes.map(j =>
                     j.id === id ? {...j, votes: j.votes + delta} : j)
-            })
-        )
+            }),
+            () => window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
+        );
     }
 
     render() {
+        if(this.state.loading){
+            return (
+               <div className='JokeList-spinner'>
+                   <i className="far fa-8x fa-laugh fa-spin"></i>
+                   <h1 className='JokeList-title'>Loading</h1>
+               </div>
+            )
 
+        }
         return (
             <div className='JokeList'>
                 <div className='JokeList-sidebar'>
@@ -61,7 +80,8 @@ class JokeList extends Component {
                     <img
                         src="https://assets.dryicons.com/uploads/icon/svg/8927/0eb14c71-38f2-433a-bfc8-23d9c99b3647.svg"
                         alt=""/>
-                    <button className='JokeList-getmore'>get more</button>
+                    <button onClick={this.handleClick} className='JokeList-getmore'>get more</button>
+
                 </div>
 
                 <div className="JokeList-jokes">
