@@ -15,15 +15,17 @@ class JokeList extends Component {
             jokes: JSON.parse(window.localStorage.getItem('jokes') || '[]'),
             loading: false
         };
+        this.seenJokes = new Set(this.state.jokes.map(j => j.text));
+        console.log(this.seenJokes);
         this.handleClick = this.handleClick.bind(this)
     }
 
     handleClick() {
-        this.setState({loading: true},  this.getJokes);
-
+        this.setState({loading: true}, this.getJokes);
     }
 
     async getJokes() {
+        try{
         let jokes = [];
         while (jokes.length < this.props.numJokesToGet) {
             let res = await axios.get('https://icanhazdadjoke.com/', {
@@ -31,19 +33,26 @@ class JokeList extends Component {
                     Accept: 'application/json'
                 }
             });
-
-            jokes.push({id: uuid(), text: res.data.joke, votes: 0});
-
+            let newJoke = res.data.joke;
+            if (!this.seenJokes.has(newJoke)) {
+                jokes.push({id: uuid(), text: newJoke, votes: 0});
+            } else {
+                console.log('found a duplicate');
+                console.log(newJoke);
+            }
         }
         //you bloody idiot don't forget setstate otherwise render will be empty.
         this.setState(st => ({
                 loading: false,
                 jokes: [...st.jokes, ...jokes]
             }),
-            () => window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
+            () =>
+                window.localStorage.setItem("jokes", JSON.stringify(this.state.jokes))
         );
-        window.localStorage.setItem("jokes", JSON.stringify(jokes)
-        )
+        }catch (e) {
+            alert(e);
+        }
+
     }
 
 
@@ -62,12 +71,12 @@ class JokeList extends Component {
     }
 
     render() {
-        if(this.state.loading){
+        if (this.state.loading) {
             return (
-               <div className='JokeList-spinner'>
-                   <i className="far fa-8x fa-laugh fa-spin"></i>
-                   <h1 className='JokeList-title'>Loading</h1>
-               </div>
+                <div className='JokeList-spinner'>
+                    <i className="far fa-8x fa-laugh fa-spin"></i>
+                    <h1 className='JokeList-title'>Loading</h1>
+                </div>
             )
 
         }
